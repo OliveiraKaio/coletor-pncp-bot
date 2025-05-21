@@ -4,15 +4,13 @@
   "description": "Scraper de editais PNCP com Puppeteer e PostgreSQL",
   "main": "start.js",
   "scripts": {
-    "start": "node start.js"
+    "start": "node index.js"
   },
   "author": "SeuNome",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.0.3",
-    "node-fetch": "^3.3.2",
-    "pg": "^8.11.1",
-    "puppeteer": "^21.3.8"
-  },
-  "type": "module"
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.3",
+    "axios": "^1.6.7"
+  }
 }
