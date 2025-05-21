@@ -1,0 +1,18 @@
+{
+  "name": "coletor-pncp-bot",
+  "version": "1.0.0",
+  "description": "Scraper de editais PNCP com Puppeteer e PostgreSQL",
+  "main": "start.js",
+  "scripts": {
+    "start": "node start.js"
+  },
+  "author": "SeuNome",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.11.1",
+    "puppeteer": "^21.3.8"
+  },
+  "type": "module"
+}
