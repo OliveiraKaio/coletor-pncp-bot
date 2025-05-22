@@ -7,10 +7,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-async function resetarBanco() {
-  await pool.query("DROP TABLE IF EXISTS editais_completo");
-}
-
 async function inicializarBanco() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS editais_completo (
@@ -21,7 +17,13 @@ async function inicializarBanco() {
       fonte_orcamentaria TEXT, data_divulgacao TEXT, situacao TEXT,
       data_inicio TEXT, data_fim TEXT, valor_total TEXT,
       itens_detalhados TEXT, coletado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
+    );
+
+    CREATE TABLE IF NOT EXISTS execucoes_bot (
+      id SERIAL PRIMARY KEY,
+      data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      contador INT DEFAULT 0
+    );
   `);
 }
 
@@ -62,4 +64,20 @@ async function consultarIdsExistentes(ids) {
   return res.rows.map(row => row.idpncp);
 }
 
-module.exports = { salvarEdital, editalExiste, resetarBanco, inicializarBanco, consultarIdsExistentes };
+async function getContadorExecucoes() {
+  const res = await pool.query("SELECT contador FROM execucoes_bot ORDER BY id DESC LIMIT 1");
+  return res.rows[0]?.contador || 0;
+}
+
+async function setContadorExecucoes(contador) {
+  await pool.query("INSERT INTO execucoes_bot (contador) VALUES ($1)", [contador]);
+}
+
+module.exports = {
+  salvarEdital,
+  editalExiste,
+  inicializarBanco,
+  consultarIdsExistentes,
+  getContadorExecucoes,
+  setContadorExecucoes
+};

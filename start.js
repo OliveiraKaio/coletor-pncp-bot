@@ -8,44 +8,33 @@ const {
   DELAY_ENTRE_EDITAIS_MS,
   DELAY_EM_CASO_DE_ERRO_MS,
 } = require("./config");
-const { salvarEdital, editalExiste, inicializarBanco, consultarIdsExistentes } = require("./db");
+const { salvarEdital, editalExiste, inicializarBanco, consultarIdsExistentes, getContadorExecucoes, setContadorExecucoes } = require("./db");
 const { detalharEdital, coletarItensEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
 
-// Fallback para forçar execução após 3 recusas consecutivas
-const fs = require("fs");
-const CONTADOR_PATH = "/tmp/contador_execucoes.json";
-let contadorExecucoes = 0;
-
-try {
-  if (fs.existsSync(CONTADOR_PATH)) {
-    const data = JSON.parse(fs.readFileSync(CONTADOR_PATH, "utf8"));
-    contadorExecucoes = data.contador || 0;
-  }
-} catch (e) {
-  console.warn("⚠️ Erro ao ler contador de execuções", e.message);
-}
-
-const chanceBase = 0.5;
-const chanceExtra = contadorExecucoes * 0.2;
-const chanceFinal = Math.min(1, chanceBase + chanceExtra); // Limita em 1 (100%)
-const deveExecutar = Math.random() < chanceFinal;
-
-
-const agora = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" });
-if (!deveExecutar && contadorExecucoes < 3) {
-  contadorExecucoes++;
-  fs.writeFileSync(CONTADOR_PATH, JSON.stringify({ contador: contadorExecucoes }));
-  console.log(`⏸️ Execução ignorada (${(chanceDeExecutar * 100).toFixed(1)}% de chance) — ${agora}`);
-  process.exit(0);
-} else {
-  contadorExecucoes = 0;
-  fs.writeFileSync(CONTADOR_PATH, JSON.stringify({ contador: 0 }));
-}
-
 (async () => {
-  await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).");
   await inicializarBanco();
+  let contadorExecucoes = await getContadorExecucoes();
+
+  const chanceBase = 0.5;
+  const chanceExtra = contadorExecucoes * 0.2;
+  const chanceFinal = Math.min(1, chanceBase + chanceExtra);
+  const sorteio = Math.random();
+  const deveExecutar = sorteio < chanceFinal;
+  const agora = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+  if (!deveExecutar && contadorExecucoes < 3) {
+    contadorExecucoes++;
+    await setContadorExecucoes(contadorExecucoes);
+    console.log(`⏸️ Execução ignorada (${(chanceFinal * 100).toFixed(1)}% de chance, sorteio ${(sorteio * 100).toFixed(1)}%) — ${agora}`);
+    process.exit(0);
+  } else {
+    contadorExecucoes = 0;
+    await setContadorExecucoes(0);
+    console.log(`✅ Execução permitida (${(chanceFinal * 100).toFixed(1)}% de chance, sorteio ${(sorteio * 100).toFixed(1)}%) — ${agora}`);
+  }
+
+  await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).");
 
   const baseUrl = "https://pncp.gov.br/api/search/";
   let totalColetado = 0;
@@ -104,6 +93,7 @@ if (!deveExecutar && contadorExecucoes < 3) {
 
         if (!detalhes || !itensDetalhados) {
           console.log(`⚠️ Falha ao detalhar ${idpncp}`);
+          await notificarTelegram(`❌ Falha ao detalhar edital ${idpncp} — possível erro de conexão ou bloqueio.`);
           await sleep(DELAY_EM_CASO_DE_ERRO_MS);
           continue;
         }
