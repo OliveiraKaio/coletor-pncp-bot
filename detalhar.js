@@ -1,17 +1,21 @@
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-const { sleep } = require('./utils');
+const fetch = require("node-fetch");
+const { sleep } = require("./utils");
 
 async function detalharEdital(idpncp) {
   try {
     await sleep(1000 + Math.random() * 2000);
 
-    const [cnpj, , parteFinal] = idpncp.split("-");
-    const [sequencial, ano] = parteFinal.split("/");
+    const [cnpj, , resto] = idpncp.split("-");
+    const [sequencial, ano] = resto.split("/");
 
     const url = `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${ano}/${parseInt(sequencial)}`;
     const resp = await fetch(url);
 
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      console.error("[ERRO DETALHAR] Status:", resp.status);
+      return null;
+    }
+
     const data = await resp.json();
 
     return {
