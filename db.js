@@ -46,4 +46,9 @@ async function salvarEdital(edital) {
   ]);
 }
 
-module.exports = { salvarEdital };
+async function editalExiste(idpncp) {
+  const res = await pool.query('SELECT 1 FROM editais_completo WHERE idpncp = $1', [idpncp]);
+  return res.rowCount > 0;
+}
+
+module.exports = { salvarEdital, editalExiste };

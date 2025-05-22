@@ -14,12 +14,12 @@ const {
   DELAY_ENTRE_EDITAIS_MS,
   DELAY_EM_CASO_DE_ERRO_MS,
 } = require("./config");
-const { salvarEdital } = require("./db");
+const { salvarEdital, editalExiste } = require("./db");
 const { detalharEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
 
 (async () => {
-  await notificarTelegram("🤖 Bot PNCP iniciado (modo API).");
+  await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).");
   const baseUrl = "https://pncp.gov.br/api/search/";
   let pagina = 1;
   let totalColetado = 0;
@@ -34,9 +34,7 @@ const { sleep, notificarTelegram } = require("./utils");
         status: "recebendo_proposta",
       };
 
-      console.log(`[API] Buscando página ${pagina} via API...`);
-      console.log("[DEBUG] Params:", params);
-
+      console.log(`📥 Página ${pagina} — consultando API do PNCP...`);
       const response = await axios.get(baseUrl, {
         params,
         timeout: 10000,
@@ -46,12 +44,11 @@ const { sleep, notificarTelegram } = require("./utils");
         }
       });
 
-      console.log(`[DEBUG] Total de itens recebidos: ${response.data?.items?.length || 0}`);
-      console.log("[DEBUG] Primeiro item:", response.data?.items?.[0]);
-
       const rawItems = response.data?.items || [];
       const licitacoes = Array.isArray(rawItems) ? rawItems : Object.values(rawItems);
       if (licitacoes.length === 0) break;
+
+      let capturadosNestaPagina = 0;
 
       for (const item of licitacoes) {
         if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
@@ -60,15 +57,20 @@ const { sleep, notificarTelegram } = require("./utils");
         const titulo = item.description || item.title || "Sem título";
         const link = item.item_url ? `https://pncp.gov.br${item.item_url}` : null;
 
+        const jaExiste = await editalExiste(idpncp);
+        if (jaExiste) {
+          console.log(`⏩ Edital ${idpncp} já coletado. Pulando.`);
+          continue;
+        }
+
+        console.log(`🔍 Detalhando edital ${idpncp}...`);
         const detalhes = await detalharEdital(idpncp);
-        console.log("[DEBUG] Detalhes do edital:", detalhes);
         if (!detalhes) {
-          await notificarTelegram(`⚠️ Falha ao detalhar edital ${idpncp}. Pausando.`);
+          console.log(`⚠️ Falha ao detalhar ${idpncp}`);
           await sleep(DELAY_EM_CASO_DE_ERRO_MS);
           continue;
         }
 
-        console.log("[DB] Salvando edital:", idpncp);
         await salvarEdital({
           idpncp,
           titulo,
@@ -81,18 +83,30 @@ const { sleep, notificarTelegram } = require("./utils");
           ...detalhes,
         });
 
-        console.log(`[coleta] Salvo ${idpncp}`);
+        console.log(`✅ Edital salvo: ${idpncp}`);
         totalColetado++;
-        await sleep(DELAY_ENTRE_EDITAIS_MS());
+        capturadosNestaPagina++;
+        await sleep(1500 + Math.random() * 3000);
+      }
+
+      if (capturadosNestaPagina === 0) {
+        console.log("📭 Nenhum edital novo nesta página.");
       }
 
       pagina++;
+      console.log("⏳ Aguardando próxima página...");
+      await sleep(2000 + Math.random() * 2000);
     }
 
-    await notificarTelegram(`✅ Coleta via API finalizada. ${totalColetado} editais salvos.`);
+    if (totalColetado > 0) {
+      await notificarTelegram(`📦 Coleta finalizada. ${totalColetado} editais salvos.`);
+    } else {
+      await notificarTelegram("📭 Nenhum edital novo encontrado.");
+    }
+
     console.log("✅ Script finalizado");
   } catch (err) {
     console.error("Erro geral:", err);
-    await notificarTelegram(`❌ Erro geral na coleta via API: ${err.message}`);
+    await notificarTelegram(`❌ Erro geral: ${err.message}`);
   }
 })();
