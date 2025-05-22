@@ -14,11 +14,12 @@ const { detalharEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
 
 // Aleatoriedade: chance de executar o script (ex: 50%)
-const chanceDeExecutar = 0.5;
-if (Math.random() > chanceDeExecutar) {
+const chanceBase = 0.6 + Math.random() * 0.3; // entre 0.6 e 0.9
+if (Math.random() > chanceBase) {
   console.log("⏸️ Execução ignorada (simulando comportamento humano).\n");
   process.exit(0);
 }
+
 
 (async () => {
   await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).");
