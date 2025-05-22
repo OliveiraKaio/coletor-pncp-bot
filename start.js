@@ -37,7 +37,7 @@ const { sleep, notificarTelegram } = require("./utils");
       for (const item of licitacoes) {
         if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
 
-        const idpncp = item.id_licitacao;
+        const idpncp = item.id; // Corrigido de id_licitacao para id
         const titulo = item.titulo;
         const link = item.item_url ? `https://pncp.gov.br${item.item_url}` : null;
 

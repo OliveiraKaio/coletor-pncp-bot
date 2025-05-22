@@ -4,12 +4,18 @@ const { sleep } = require('./utils');
 async function detalharEdital(idpncp) {
   try {
     await sleep(1000 + Math.random() * 2000);
-    const resp = await fetch(`https://pncp.gov.br/api/edital/${idpncp}`);
-    if (!resp.ok) return null;
 
+    const [cnpj, , parteFinal] = idpncp.split("-");
+    const [sequencial, ano] = parteFinal.split("/");
+
+    const url = `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${ano}/${parseInt(sequencial)}`;
+    const resp = await fetch(url);
+
+    if (!resp.ok) return null;
     const data = await resp.json();
+
     return {
-      cnpj: data.cnpj || "",
+      cnpj,
       orgao: data.orgao || "",
       local: data.municipio || "",
       unidadeCompradora: data.unidade_compradora?.nome || "",
@@ -27,6 +33,7 @@ async function detalharEdital(idpncp) {
       itens: JSON.stringify(data.itens || [])
     };
   } catch (e) {
+    console.error("Erro em detalharEdital:", e);
     return null;
   }
 }

@@ -21,7 +21,7 @@ async function salvarEdital(edital) {
       orgao TEXT, local TEXT, objeto TEXT, link TEXT,
       cnpj TEXT, tipo TEXT, modo_disputa TEXT, registro_preco TEXT,
       fonte_orcamentaria TEXT, data_divulgacao TEXT, situacao TEXT,
-      data_inicio TEXT, data_fim TEXT, valor_total TEXT,
+      data_inicio DATE, data_fim DATE, valor_total TEXT,
       itens TEXT, coletado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -32,7 +32,7 @@ async function salvarEdital(edital) {
       objeto, link, cnpj, tipo, modo_disputa, registro_preco,
       fonte_orcamentaria, data_divulgacao, situacao,
       data_inicio, data_fim, valor_total, itens
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,CAST($17 AS DATE),CAST($18 AS DATE),$19)
     ON CONFLICT (idpncp) DO NOTHING
   `, [
     idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
