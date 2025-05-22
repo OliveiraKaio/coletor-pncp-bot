@@ -8,7 +8,7 @@ async function detalharEdital(idpncp) {
     const [cnpj, , resto] = idpncp.split("-");
     const [sequencial, ano] = resto.split("/");
 
-    const url = `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${ano}/${parseInt(sequencial)}/`;
+    const url = `https://pncp.gov.br/api/consulta/v1/orgaos/${cnpj}/compras/${ano}/${parseInt(sequencial)}`;
     const resp = await fetch(url, {
       redirect: 'follow',
       headers: {
