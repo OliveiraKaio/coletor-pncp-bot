@@ -3,11 +3,6 @@ const axios = require("axios");
 const dotenv = require("dotenv");
 dotenv.config();
 
-const express = require("express");
-const app = express();
-app.get("/", (req, res) => res.send("PNCP bot ativo"));
-app.listen(process.env.PORT || 3000);
-
 const {
   PAGINAS_SORTEADAS,
   LIMITE_EDITAIS_POR_EXECUCAO,
@@ -17,6 +12,13 @@ const {
 const { salvarEdital, editalExiste } = require("./db");
 const { detalharEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
+
+// Aleatoriedade: chance de executar o script (ex: 50%)
+const chanceDeExecutar = 0.5;
+if (Math.random() > chanceDeExecutar) {
+  console.log("⏸️ Execução ignorada (simulando comportamento humano).\n");
+  process.exit(0);
+}
 
 (async () => {
   await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).");

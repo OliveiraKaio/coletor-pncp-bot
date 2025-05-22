@@ -1,31 +1,19 @@
-const fetch = require("node-fetch");
-const { sleep } = require("./utils");
+// detalhar.js
+const axios = require("axios");
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function detalharEdital(idpncp) {
   try {
+    const [cnpj, , sequencialAno] = idpncp.split("-");
+    const [sequencial, ano] = sequencialAno.replace("/", "-").split("-");
+    const url = `https://pncp.gov.br/api/consulta/v1/orgaos/${cnpj}/compras/${ano}/${sequencial}`;
+
     await sleep(1000 + Math.random() * 2000);
-
-    const [cnpj, , resto] = idpncp.split("-");
-    const [sequencial, ano] = resto.split("/");
-
-    const url = `https://pncp.gov.br/api/consulta/v1/orgaos/${cnpj}/compras/${ano}/${parseInt(sequencial)}`;
-    const resp = await fetch(url, {
-      redirect: 'follow',
-      headers: {
-        "User-Agent": "Mozilla/5.0 PNCPBot",
-        "Accept": "application/json"
-      }
-    });
-
-    if (!resp.ok) {
-      console.error("[ERRO DETALHAR] Status:", resp.status);
-      return null;
-    }
-
-    const data = await resp.json();
+    const resp = await axios.get(url);
+    const data = resp.data;
 
     return {
-      cnpj,
+      cnpj: cnpj,
       orgao: data.orgaoEntidade?.razaoSocial || "",
       local: data.unidadeOrgao?.municipioNome || "",
       unidadeCompradora: data.unidadeOrgao?.nomeUnidade || "",
@@ -33,19 +21,38 @@ async function detalharEdital(idpncp) {
       tipo: data.tipoInstrumentoConvocatorioNome || "",
       modo_disputa: data.modoDisputaNome || "",
       registro_preco: data.srp ? "Sim" : "Não",
-      fonte_orcamentaria: data.fontesOrcamentarias?.join(", ") || "",
+      fonte_orcamentaria: data.fontesOrcamentarias?.map(f => f.nome).join(", ") || "",
       data_divulgacao: data.dataPublicacaoPncp || "",
       situacao: data.situacaoCompraNome || "",
       data_inicio: data.dataAberturaProposta || "",
       data_fim: data.dataEncerramentoProposta || "",
       valor_total: data.valorTotalEstimado || "",
-      objetoDetalhado: data.objetoCompra || "",
-      itens: "[]"
+      objetoDetalhado: data.objetoCompra || ""
     };
   } catch (e) {
-    console.error("Erro em detalharEdital:", e);
+    console.log("Erro em detalharEdital:", e.message);
     return null;
   }
 }
 
-module.exports = { detalharEdital };
+async function coletarItensEdital(idpncp) {
+  try {
+    const [cnpj, , sequencialAno] = idpncp.split("-");
+    const [sequencial, ano] = sequencialAno.replace("/", "-").split("-");
+    const base = `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${ano}/${sequencial}`;
+
+    const quantidadeURL = `${base}/itens/quantidade`;
+    const respQtd = await axios.get(quantidadeURL);
+    const total = respQtd.data || 0;
+    if (!total) return [];
+
+    const itensURL = `${base}/itens?pagina=1&tamanhoPagina=${total}`;
+    const respItens = await axios.get(itensURL);
+    return respItens.data || [];
+  } catch (e) {
+    console.log("Erro em coletarItensEdital:", e.message);
+    return null;
+  }
+}
+
+module.exports = { detalharEdital, coletarItensEdital };

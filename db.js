@@ -1,13 +1,14 @@
-const { Pool } = require('pg');
-const { DATABASE_URL } = require('./config');
+// db.js
+const { Pool } = require("pg");
+const { DATABASE_URL } = require("./config");
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-function formatarData(dateStr) {
-  return /^\d{4}-\d{2}-\d{2}/.test(dateStr) ? dateStr : null;
+async function resetarBanco() {
+  await pool.query("DROP TABLE IF EXISTS editais_completo");
 }
 
 async function salvarEdital(edital) {
@@ -15,7 +16,7 @@ async function salvarEdital(edital) {
     idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
     objeto, link, cnpj, tipo, modo_disputa, registro_preco,
     fonte_orcamentaria, data_divulgacao, situacao,
-    data_inicio, data_fim, valor_total, itens
+    data_inicio, data_fim, valor_total, itens_detalhados
   } = edital;
 
   await pool.query(`
@@ -25,8 +26,8 @@ async function salvarEdital(edital) {
       orgao TEXT, local TEXT, objeto TEXT, link TEXT,
       cnpj TEXT, tipo TEXT, modo_disputa TEXT, registro_preco TEXT,
       fonte_orcamentaria TEXT, data_divulgacao TEXT, situacao TEXT,
-      data_inicio DATE, data_fim DATE, valor_total TEXT,
-      itens TEXT, coletado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      data_inicio TEXT, data_fim TEXT, valor_total TEXT,
+      itens_detalhados TEXT, coletado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
@@ -35,20 +36,20 @@ async function salvarEdital(edital) {
       idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
       objeto, link, cnpj, tipo, modo_disputa, registro_preco,
       fonte_orcamentaria, data_divulgacao, situacao,
-      data_inicio, data_fim, valor_total, itens
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,CAST($16 AS DATE),CAST($17 AS DATE),$18,$19)
+      data_inicio, data_fim, valor_total, itens_detalhados
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
     ON CONFLICT (idpncp) DO NOTHING
   `, [
     idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
     objeto, link, cnpj, tipo, modo_disputa, registro_preco,
     fonte_orcamentaria, data_divulgacao, situacao,
-    formatarData(data_inicio), formatarData(data_fim), valor_total, itens
+    data_inicio, data_fim, valor_total, itens_detalhados
   ]);
 }
 
 async function editalExiste(idpncp) {
-  const res = await pool.query('SELECT 1 FROM editais_completo WHERE idpncp = $1', [idpncp]);
+  const res = await pool.query("SELECT 1 FROM editais_completo WHERE idpncp = $1", [idpncp]);
   return res.rowCount > 0;
 }
 
-module.exports = { salvarEdital, editalExiste };
+module.exports = { salvarEdital, editalExiste, resetarBanco };
