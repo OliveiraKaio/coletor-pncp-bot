@@ -1,5 +1,5 @@
-// start.js - versão compatível com Railway replicando o modelo funcional do .zip
-const puppeteer = require("puppeteer");
+// start.js - scraping HTTP via API PNCP (sem Puppeteer)
+const axios = require("axios");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -14,46 +14,36 @@ const { detalharEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
 
 (async () => {
-  await notificarTelegram("🤖 Bot PNCP iniciado.");
-  const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
-  const page = await browser.newPage();
-
+  await notificarTelegram("🤖 Bot PNCP iniciado (modo API).");
+  const baseUrl = "https://pncp.gov.br/api/search/";
+  let pagina = 1;
   let totalColetado = 0;
 
   try {
-    const paginas = PAGINAS_SORTEADAS();
-    for (const pagina of paginas) {
-      if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
+    while (totalColetado < LIMITE_EDITAIS_POR_EXECUCAO) {
+      const params = {
+        tipos_documento: "edital",
+        ordenacao: "-data",
+        pagina,
+        tam_pagina: 100,
+        status: "recebendo_proposta",
+      };
 
-      const url = `https://pncp.gov.br/app/editais?pagina=${pagina}`;
-      console.log(`[pagina] Acessando ${url}`);
-      await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
-      await sleep(2000 + Math.random() * 1000);
+      console.log(`[API] Buscando página ${pagina} via API...`);
+      const response = await axios.get(baseUrl, { params });
+      const licitacoes = response.data?._embedded?.licitacoes || [];
+      if (licitacoes.length === 0) break;
 
-      const blocos = await page.$$("div.col-12.col-md");
-      console.log(`[pagina ${pagina}] blocos encontrados: ${blocos.length}`);
-
-      for (const bloco of blocos) {
+      for (const item of licitacoes) {
         if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
-        const texto = await page.evaluate((el) => el.innerText, bloco);
 
-        if (!texto.includes("Id contratação PNCP:")) {
-          console.log(`[ignorado] conteúdo do bloco:\n${texto}`);
-          continue;
-        }
-
-        const idpncp = texto
-          .split("Id contratação PNCP:")[1]
-          .split("\n")[0]
-          .trim();
-        const titulo = await bloco.$eval("strong", (el) => el.innerText);
-        const link = `https://pncp.gov.br/app/#/edital/${idpncp}`;
+        const idpncp = item.id_licitacao;
+        const titulo = item.titulo;
+        const link = item.item_url ? `https://pncp.gov.br${item.item_url}` : null;
 
         const detalhes = await detalharEdital(idpncp);
         if (!detalhes) {
-          await notificarTelegram(
-            `⚠️ Falha ao detalhar edital ${idpncp}. Pausando.`
-          );
+          await notificarTelegram(`⚠️ Falha ao detalhar edital ${idpncp}. Pausando.`);
           await sleep(DELAY_EM_CASO_DE_ERRO_MS);
           continue;
         }
@@ -74,15 +64,13 @@ const { sleep, notificarTelegram } = require("./utils");
         totalColetado++;
         await sleep(DELAY_ENTRE_EDITAIS_MS());
       }
+
+      pagina++;
     }
 
-    await notificarTelegram(
-      `✅ Coleta finalizada. ${totalColetado} editais salvos.`
-    );
+    await notificarTelegram(`✅ Coleta via API finalizada. ${totalColetado} editais salvos.`);
   } catch (err) {
     console.error("Erro geral:", err);
-    await notificarTelegram(`❌ Erro geral na coleta: ${err.message}`);
+    await notificarTelegram(`❌ Erro geral na coleta via API: ${err.message}`);
   }
-
-  await browser.close();
 })();
