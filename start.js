@@ -35,7 +35,7 @@ if (Math.random() > chanceBase) {
         tipos_documento: "edital",
         ordenacao: "-data",
         pagina,
-        tam_pagina: 10,
+        tam_pagina: 20,
         status: "recebendo_proposta",
       };
 
