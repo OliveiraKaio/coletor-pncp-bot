@@ -26,8 +26,11 @@ try {
   console.warn("⚠️ Erro ao ler contador de execuções", e.message);
 }
 
-const chanceDeExecutar = 0.9;
-const deveExecutar = Math.random() < chanceDeExecutar;
+const chanceBase = 0.5;
+const chanceExtra = contadorExecucoes * 0.2;
+const chanceFinal = Math.min(1, chanceBase + chanceExtra); // Limita em 1 (100%)
+const deveExecutar = Math.random() < chanceFinal;
+
 
 const agora = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" });
 if (!deveExecutar && contadorExecucoes < 3) {
