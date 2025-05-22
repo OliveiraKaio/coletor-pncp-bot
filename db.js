@@ -54,4 +54,12 @@ async function editalExiste(idpncp) {
   return res.rowCount > 0;
 }
 
-module.exports = { salvarEdital, editalExiste, resetarBanco, inicializarBanco };
+async function consultarIdsExistentes(ids) {
+  const res = await pool.query(
+    `SELECT idpncp FROM editais_completo WHERE idpncp = ANY($1)`,
+    [ids]
+  );
+  return res.rows.map(row => row.idpncp);
+}
+
+module.exports = { salvarEdital, editalExiste, resetarBanco, inicializarBanco, consultarIdsExistentes };
