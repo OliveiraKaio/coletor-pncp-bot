@@ -9,7 +9,13 @@ async function detalharEdital(idpncp) {
     const [sequencial, ano] = resto.split("/");
 
     const url = `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${ano}/${parseInt(sequencial)}/`;
-    const resp = await fetch(url);
+    const resp = await fetch(url, {
+      redirect: 'follow',
+      headers: {
+        "User-Agent": "Mozilla/5.0 PNCPBot",
+        "Accept": "application/json"
+      }
+    });
 
     if (!resp.ok) {
       console.error("[ERRO DETALHAR] Status:", resp.status);
