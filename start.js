@@ -1,12 +1,17 @@
-// start.js
-const puppeteer = require('puppeteer');
-const { PAGINAS_SORTEADAS, LIMITE_EDITAIS_POR_EXECUCAO, DELAY_ENTRE_EDITAIS_MS, DELAY_EM_CASO_DE_ERRO_MS } = require('./config');
-const { salvarEdital } = require('./db');
-const { detalharEdital } = require('./detalhar');
-const { sleep, notificarTelegram } = require('./utils');
+// start.js - coleta via Puppeteer com log de blocos ignorados
+const puppeteer = require("puppeteer");
+const {
+  PAGINAS_SORTEADAS,
+  LIMITE_EDITAIS_POR_EXECUCAO,
+  DELAY_ENTRE_EDITAIS_MS,
+  DELAY_EM_CASO_DE_ERRO_MS,
+} = require("./config");
+const { salvarEdital } = require("./db");
+const { detalharEdital } = require("./detalhar");
+const { sleep, notificarTelegram } = require("./utils");
 
 (async () => {
-  await notificarTelegram('🤖 Bot PNCP iniciado.');
+  await notificarTelegram("🤖 Bot PNCP iniciado.");
   const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
 
@@ -19,25 +24,33 @@ const { sleep, notificarTelegram } = require('./utils');
 
       const url = `https://pncp.gov.br/app/editais?pagina=${pagina}`;
       console.log(`[pagina] Acessando ${url}`);
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+      await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
       await sleep(2000 + Math.random() * 1000);
 
-      const blocos = await page.$$('div.col-12.col-md');
+      const blocos = await page.$$("div.col-12.col-md");
       console.log(`[pagina ${pagina}] blocos encontrados: ${blocos.length}`);
 
       for (const bloco of blocos) {
         if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
-        const texto = await page.evaluate(el => el.innerText, bloco);
+        const texto = await page.evaluate((el) => el.innerText, bloco);
 
-        if (!texto.includes('Id contratação PNCP:')) continue;
+        if (!texto.includes("Id contratação PNCP:")) {
+          console.log(`[ignorado] conteúdo do bloco:\n${texto}`);
+          continue;
+        }
 
-        const idpncp = texto.split('Id contratação PNCP:')[1].split('\n')[0].trim();
-        const titulo = await bloco.$eval('strong', el => el.innerText);
+        const idpncp = texto
+          .split("Id contratação PNCP:")[1]
+          .split("\n")[0]
+          .trim();
+        const titulo = await bloco.$eval("strong", (el) => el.innerText);
         const link = `https://pncp.gov.br/app/#/edital/${idpncp}`;
 
         const detalhes = await detalharEdital(idpncp);
         if (!detalhes) {
-          await notificarTelegram(`⚠️ Falha ao detalhar edital ${idpncp}. Pausando.`);
+          await notificarTelegram(
+            `⚠️ Falha ao detalhar edital ${idpncp}. Pausando.`
+          );
           await sleep(DELAY_EM_CASO_DE_ERRO_MS);
           continue;
         }
@@ -51,7 +64,7 @@ const { sleep, notificarTelegram } = require('./utils');
           local: detalhes.local,
           objeto: detalhes.objetoDetalhado,
           link,
-          ...detalhes
+          ...detalhes,
         });
 
         console.log(`[coleta] Salvo ${idpncp}`);
@@ -60,9 +73,11 @@ const { sleep, notificarTelegram } = require('./utils');
       }
     }
 
-    await notificarTelegram(`✅ Coleta finalizada. ${totalColetado} editais salvos.`);
+    await notificarTelegram(
+      `✅ Coleta finalizada. ${totalColetado} editais salvos.`
+    );
   } catch (err) {
-    console.error('Erro geral:', err);
+    console.error("Erro geral:", err);
     await notificarTelegram(`❌ Erro geral na coleta: ${err.message}`);
   }
 
