@@ -26,7 +26,7 @@ try {
   console.warn("⚠️ Erro ao ler contador de execuções", e.message);
 }
 
-const chanceDeExecutar = 0.8;
+const chanceDeExecutar = 0.9;
 const deveExecutar = Math.random() < chanceDeExecutar;
 
 const agora = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" });
