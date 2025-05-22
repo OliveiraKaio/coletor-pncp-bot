@@ -30,15 +30,23 @@ const { sleep, notificarTelegram } = require("./utils");
       };
 
       console.log(`[API] Buscando página ${pagina} via API...`);
-      const response = await axios.get(baseUrl, { params });
-      const licitacoes = response.data?._embedded?.licitacoes || [];
+      const response = await axios.get(baseUrl, {
+        params,
+        timeout: 10000,
+        headers: {
+          "User-Agent": "Mozilla/5.0 PNCPBot",
+          "Accept": "application/json"
+        }
+      });
+
+      const licitacoes = response.data?.items || [];
       if (licitacoes.length === 0) break;
 
       for (const item of licitacoes) {
         if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
 
-        const idpncp = item.id; // Corrigido de id_licitacao para id
-        const titulo = item.titulo;
+        const idpncp = item.numero_controle_pncp;
+        const titulo = item.title;
         const link = item.item_url ? `https://pncp.gov.br${item.item_url}` : null;
 
         const detalhes = await detalharEdital(idpncp);
