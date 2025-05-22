@@ -30,6 +30,8 @@ const { sleep, notificarTelegram } = require("./utils");
       };
 
       console.log(`[API] Buscando página ${pagina} via API...`);
+      console.log("[DEBUG] Params:", params);
+
       const response = await axios.get(baseUrl, {
         params,
         timeout: 10000,
@@ -38,6 +40,8 @@ const { sleep, notificarTelegram } = require("./utils");
           "Accept": "application/json"
         }
       });
+
+      console.log("[DEBUG] Resposta recebida:", JSON.stringify(response.data, null, 2));
 
       const licitacoes = response.data?.items || [];
       if (licitacoes.length === 0) break;
