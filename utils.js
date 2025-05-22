@@ -2,6 +2,10 @@ const axios = require("axios");
 const dotenv = require("dotenv");
 dotenv.config();
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function notificarTelegram(mensagem) {
   const token = process.env.TELEGRAM_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -18,4 +22,4 @@ async function notificarTelegram(mensagem) {
   }
 }
 
-module.exports = { notificarTelegram };
+module.exports = { notificarTelegram, sleep };
