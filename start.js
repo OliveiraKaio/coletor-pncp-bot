@@ -9,8 +9,8 @@ const {
   DELAY_ENTRE_EDITAIS_MS,
   DELAY_EM_CASO_DE_ERRO_MS,
 } = require("./config");
-const { salvarEdital, editalExiste } = require("./db");
-const { detalharEdital } = require("./detalhar");
+const { salvarEdital, editalExiste, inicializarBanco } = require("./db");
+const { detalharEdital, coletarItensEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
 
 // Aleatoriedade: chance de executar o script (ex: 50%)
@@ -23,6 +23,8 @@ if (Math.random() > chanceBase) {
 
 (async () => {
   await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).");
+  await inicializarBanco();
+
   const baseUrl = "https://pncp.gov.br/api/search/";
   let pagina = 1;
   let totalColetado = 0;
@@ -68,7 +70,9 @@ if (Math.random() > chanceBase) {
 
         console.log(`🔍 Detalhando edital ${idpncp}...`);
         const detalhes = await detalharEdital(idpncp);
-        if (!detalhes) {
+        const itensDetalhados = await coletarItensEdital(idpncp);
+
+        if (!detalhes || !itensDetalhados) {
           console.log(`⚠️ Falha ao detalhar ${idpncp}`);
           await sleep(DELAY_EM_CASO_DE_ERRO_MS);
           continue;
@@ -84,6 +88,7 @@ if (Math.random() > chanceBase) {
           objeto: detalhes.objetoDetalhado,
           link,
           ...detalhes,
+          itens_detalhados: JSON.stringify(itensDetalhados)
         });
 
         console.log(`✅ Edital salvo: ${idpncp}`);
