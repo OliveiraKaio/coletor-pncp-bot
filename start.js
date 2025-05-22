@@ -9,101 +9,103 @@ const {
   DELAY_ENTRE_EDITAIS_MS,
   DELAY_EM_CASO_DE_ERRO_MS,
 } = require("./config");
-const { salvarEdital, editalExiste, inicializarBanco } = require("./db");
+const { salvarEdital, editalExiste, inicializarBanco, consultarIdsExistentes } = require("./db");
 const { detalharEdital, coletarItensEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
 
-// Aleatoriedade: chance de executar o script (ex: 50%)
-const chanceBase = 0.6 + Math.random() * 0.3; // entre 0.6 e 0.9
-if (Math.random() > chanceBase) {
-  console.log("⏸️ Execução ignorada (simulando comportamento humano).\n");
+// Aleatoriedade com base no horário do dia
+const horaAtual = new Date().getHours();
+const chanceDeExecutar = horaAtual >= 6 && horaAtual <= 23 ? 0.7 : 1.0;
+if (Math.random() > chanceDeExecutar) {
+  console.log(`⏸️ Execução ignorada (${(1 - chanceDeExecutar) * 100}% de chance) — ${new Date().toLocaleTimeString()}`);
   process.exit(0);
 }
-
 
 (async () => {
   await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).");
   await inicializarBanco();
 
   const baseUrl = "https://pncp.gov.br/api/search/";
-  let pagina = 1;
   let totalColetado = 0;
 
-  try {
-    while (totalColetado < LIMITE_EDITAIS_POR_EXECUCAO) {
-      const params = {
-        tipos_documento: "edital",
-        ordenacao: "-data",
-        pagina,
-        tam_pagina: 20,
-        status: "recebendo_proposta",
-      };
+  // Sorteio de página com base no horário do dia
+  const hora = new Date().getHours();
+  const dia = new Date().getDay();
+  const pagina = dia === 0 || dia === 6
+    ? Math.floor(Math.random() * 900) + 100 // Fim de semana: buscar editais antigos
+    : Math.floor(Math.random() * 100) + 1; // Semana: buscar recentes
 
-      console.log(`📥 Página ${pagina} — consultando API do PNCP...`);
-      const response = await axios.get(baseUrl, {
-        params,
-        timeout: 10000,
-        headers: {
-          "User-Agent": "Mozilla/5.0 PNCPBot",
-          "Accept": "application/json"
-        }
+  try {
+    const params = {
+      tipos_documento: "edital",
+      ordenacao: "-data",
+      pagina,
+      tam_pagina: 100,
+      status: "recebendo_proposta",
+    };
+
+    console.log(`📥 Página ${pagina} — consultando API do PNCP...`);
+    const response = await axios.get(baseUrl, {
+      params,
+      timeout: 10000,
+      headers: {
+        "User-Agent": "Mozilla/5.0 PNCPBot",
+        "Accept": "application/json"
+      }
+    });
+
+    const rawItems = response.data?.items || [];
+    const licitacoes = Array.isArray(rawItems) ? rawItems : Object.values(rawItems);
+    if (licitacoes.length === 0) {
+      console.log("📭 Nenhum edital retornado.");
+      return;
+    }
+
+    const ids = licitacoes.map(item => item.numero_controle_pncp);
+    const jaColetados = await consultarIdsExistentes(ids);
+    if (jaColetados.length === ids.length) {
+      console.log(`⚡ Página ${pagina} já totalmente varrida. Pulando...`);
+      return;
+    }
+
+    for (const item of licitacoes) {
+      if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
+
+      const idpncp = item.numero_controle_pncp;
+      const titulo = item.description || item.title || "Sem título";
+      const link = item.item_url ? `https://pncp.gov.br${item.item_url}` : null;
+
+      if (jaColetados.includes(idpncp)) {
+        console.log(`⏩ Edital ${idpncp} já coletado. Pulando.`);
+        continue;
+      }
+
+      console.log(`🔍 Detalhando edital ${idpncp}...`);
+      const detalhes = await detalharEdital(idpncp);
+      const itensDetalhados = await coletarItensEdital(idpncp);
+
+      if (!detalhes || !itensDetalhados) {
+        console.log(`⚠️ Falha ao detalhar ${idpncp}`);
+        await sleep(DELAY_EM_CASO_DE_ERRO_MS);
+        continue;
+      }
+
+      await salvarEdital({
+        idpncp,
+        titulo,
+        modalidade: detalhes.modalidade,
+        ultima_atualizacao: detalhes.data_divulgacao,
+        orgao: detalhes.orgao,
+        local: detalhes.local,
+        objeto: detalhes.objetoDetalhado,
+        link,
+        ...detalhes,
+        itens_detalhados: JSON.stringify(itensDetalhados)
       });
 
-      const rawItems = response.data?.items || [];
-      const licitacoes = Array.isArray(rawItems) ? rawItems : Object.values(rawItems);
-      if (licitacoes.length === 0) break;
-
-      let capturadosNestaPagina = 0;
-
-      for (const item of licitacoes) {
-        if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
-
-        const idpncp = item.numero_controle_pncp;
-        const titulo = item.description || item.title || "Sem título";
-        const link = item.item_url ? `https://pncp.gov.br${item.item_url}` : null;
-
-        const jaExiste = await editalExiste(idpncp);
-        if (jaExiste) {
-          console.log(`⏩ Edital ${idpncp} já coletado. Pulando.`);
-          continue;
-        }
-
-        console.log(`🔍 Detalhando edital ${idpncp}...`);
-        const detalhes = await detalharEdital(idpncp);
-        const itensDetalhados = await coletarItensEdital(idpncp);
-
-        if (!detalhes || !itensDetalhados) {
-          console.log(`⚠️ Falha ao detalhar ${idpncp}`);
-          await sleep(DELAY_EM_CASO_DE_ERRO_MS);
-          continue;
-        }
-
-        await salvarEdital({
-          idpncp,
-          titulo,
-          modalidade: detalhes.modalidade,
-          ultima_atualizacao: detalhes.data_divulgacao,
-          orgao: detalhes.orgao,
-          local: detalhes.local,
-          objeto: detalhes.objetoDetalhado,
-          link,
-          ...detalhes,
-          itens_detalhados: JSON.stringify(itensDetalhados)
-        });
-
-        console.log(`✅ Edital salvo: ${idpncp}`);
-        totalColetado++;
-        capturadosNestaPagina++;
-        await sleep(1500 + Math.random() * 3000);
-      }
-
-      if (capturadosNestaPagina === 0) {
-        console.log("📭 Nenhum edital novo nesta página.");
-      }
-
-      pagina++;
-      console.log("⏳ Aguardando próxima página...");
-      await sleep(2000 + Math.random() * 2000);
+      console.log(`✅ Edital salvo: ${idpncp}`);
+      totalColetado++;
+      await sleep(1500 + Math.random() * 3000);
     }
 
     if (totalColetado > 0) {
