@@ -50,7 +50,7 @@ const { sleep, notificarTelegram } = require("./utils");
         if (totalColetado >= LIMITE_EDITAIS_POR_EXECUCAO) break;
 
         const idpncp = item.numero_controle_pncp;
-        const titulo = item.title;
+        const titulo = item.description || item.title || "Sem título";
         const link = item.item_url ? `https://pncp.gov.br${item.item_url}` : null;
 
         const detalhes = await detalharEdital(idpncp);
