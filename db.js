@@ -6,6 +6,10 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+function formatarData(dateStr) {
+  return /^\d{4}-\d{2}-\d{2}/.test(dateStr) ? dateStr : null;
+}
+
 async function salvarEdital(edital) {
   const {
     idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
@@ -32,13 +36,13 @@ async function salvarEdital(edital) {
       objeto, link, cnpj, tipo, modo_disputa, registro_preco,
       fonte_orcamentaria, data_divulgacao, situacao,
       data_inicio, data_fim, valor_total, itens
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,CAST($17 AS DATE),CAST($18 AS DATE),$19)
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,CAST($16 AS DATE),CAST($17 AS DATE),$18,$19)
     ON CONFLICT (idpncp) DO NOTHING
   `, [
     idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
     objeto, link, cnpj, tipo, modo_disputa, registro_preco,
     fonte_orcamentaria, data_divulgacao, situacao,
-    data_inicio, data_fim, valor_total, itens
+    formatarData(data_inicio), formatarData(data_fim), valor_total, itens
   ]);
 }
 
