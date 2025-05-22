@@ -25,7 +25,7 @@ const { sleep, notificarTelegram } = require("./utils");
         tipos_documento: "edital",
         ordenacao: "-data",
         pagina,
-        tam_pagina: 100,
+        tam_pagina: 10,
         status: "recebendo_proposta",
       };
 
@@ -41,7 +41,8 @@ const { sleep, notificarTelegram } = require("./utils");
         }
       });
 
-      console.log("[DEBUG] Resposta recebida:", JSON.stringify(response.data, null, 2));
+      console.log(`[DEBUG] Total de itens recebidos: ${response.data?.items?.length || 0}`);
+      console.log("[DEBUG] Primeiro item:", response.data?.items?.[0]);
 
       const licitacoes = response.data?.items || [];
       if (licitacoes.length === 0) break;
