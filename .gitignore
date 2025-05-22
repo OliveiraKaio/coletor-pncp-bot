@@ -1,3 +1,4 @@
 .env.local
 teste_telegram.js
 node_modules
+package-lock.json
