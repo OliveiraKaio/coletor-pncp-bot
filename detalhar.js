@@ -26,21 +26,21 @@ async function detalharEdital(idpncp) {
 
     return {
       cnpj,
-      orgao: data.orgao || "",
-      local: data.municipio || "",
-      unidadeCompradora: data.unidade_compradora?.nome || "",
-      modalidade: data.modalidade || "",
-      tipo: data.tipo_licitacao || "",
-      modo_disputa: data.modo_disputa || "",
-      registro_preco: data.registro_preco || "",
-      fonte_orcamentaria: data.fonte_recurso || "",
-      data_divulgacao: data.data_publicacao || "",
-      situacao: data.situacao || "",
-      data_inicio: data.data_inicio_recebimento_proposta || "",
-      data_fim: data.data_fim_recebimento_proposta || "",
-      valor_total: data.valor_estimado || "",
-      objetoDetalhado: data.objeto_completo || "",
-      itens: JSON.stringify(data.itens || [])
+      orgao: data.orgaoEntidade?.razaoSocial || "",
+      local: data.unidadeOrgao?.municipioNome || "",
+      unidadeCompradora: data.unidadeOrgao?.nomeUnidade || "",
+      modalidade: data.modalidadeNome || "",
+      tipo: data.tipoInstrumentoConvocatorioNome || "",
+      modo_disputa: data.modoDisputaNome || "",
+      registro_preco: data.srp ? "Sim" : "Não",
+      fonte_orcamentaria: data.fontesOrcamentarias?.join(", ") || "",
+      data_divulgacao: data.dataPublicacaoPncp || "",
+      situacao: data.situacaoCompraNome || "",
+      data_inicio: data.dataAberturaProposta || "",
+      data_fim: data.dataEncerramentoProposta || "",
+      valor_total: data.valorTotalEstimado || "",
+      objetoDetalhado: data.objetoCompra || "",
+      itens: "[]"
     };
   } catch (e) {
     console.error("Erro em detalharEdital:", e);
