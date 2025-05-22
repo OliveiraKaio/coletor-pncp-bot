@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Copia arquivos e instala dependências sem gerar package-lock.json
 COPY package*.json ./
-RUN npm install --no-save
+RUN npm install --no-audit --no-fund --unsafe-perm
 
 COPY . .
 
