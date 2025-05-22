@@ -1,10 +1,10 @@
 module.exports = {
-  LIMITE_EDITAIS_POR_EXECUCAO: Math.floor(Math.random() * 6) + 10, // entre 10 e 15 editais
+  LIMITE_EDITAIS_POR_EXECUCAO: Math.floor(Math.random() * 21) + 30, // entre 30 e 50 editais
   PAGINAS_SORTEADAS: () => {
     const paginas = new Set();
-    const total = Math.floor(Math.random() * 3) + 2; // entre 2 e 4 páginas
+    const total = Math.floor(Math.random() * 6) + 5; // entre 5 e 10 páginas
     while (paginas.size < total) {
-      paginas.add(Math.floor(Math.random() * 20) + 1); // páginas 1 a 20
+      paginas.add(Math.floor(Math.random() * 50) + 1); // páginas 1 a 50
     }
     return Array.from(paginas);
   },
