@@ -11,14 +11,7 @@ async function resetarBanco() {
   await pool.query("DROP TABLE IF EXISTS editais_completo");
 }
 
-async function salvarEdital(edital) {
-  const {
-    idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
-    objeto, link, cnpj, tipo, modo_disputa, registro_preco,
-    fonte_orcamentaria, data_divulgacao, situacao,
-    data_inicio, data_fim, valor_total, itens_detalhados
-  } = edital;
-
+async function inicializarBanco() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS editais_completo (
       idpncp TEXT PRIMARY KEY,
@@ -30,6 +23,15 @@ async function salvarEdital(edital) {
       itens_detalhados TEXT, coletado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+}
+
+async function salvarEdital(edital) {
+  const {
+    idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
+    objeto, link, cnpj, tipo, modo_disputa, registro_preco,
+    fonte_orcamentaria, data_divulgacao, situacao,
+    data_inicio, data_fim, valor_total, itens_detalhados
+  } = edital;
 
   await pool.query(`
     INSERT INTO editais_completo (
@@ -52,4 +54,4 @@ async function editalExiste(idpncp) {
   return res.rowCount > 0;
 }
 
-module.exports = { salvarEdital, editalExiste, resetarBanco };
+module.exports = { salvarEdital, editalExiste, resetarBanco, inicializarBanco };
