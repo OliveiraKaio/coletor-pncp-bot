@@ -1,4 +1,3 @@
-// start.js - scraping HTTP via API PNCP (sem Puppeteer)
 const axios = require("axios");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -8,11 +7,18 @@ const {
   DELAY_ENTRE_EDITAIS_MS,
   DELAY_EM_CASO_DE_ERRO_MS,
 } = require("./config");
-const { salvarEdital, editalExiste, inicializarBanco, consultarIdsExistentes, getContadorExecucoes, setContadorExecucoes } = require("./db");
+const {
+  salvarEdital,
+  editalExiste,
+  inicializarBanco,
+  consultarIdsExistentes,
+  getContadorExecucoes,
+  setContadorExecucoes,
+} = require("./db");
 const { detalharEdital, coletarItensEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
 
-(async () => {
+async function executarColeta() {
   await inicializarBanco();
   let contadorExecucoes = await getContadorExecucoes();
 
@@ -27,14 +33,14 @@ const { sleep, notificarTelegram } = require("./utils");
     contadorExecucoes++;
     await setContadorExecucoes(contadorExecucoes);
     console.log(`⏸️ Execução ignorada (${(chanceFinal * 100).toFixed(1)}% de chance, sorteio ${(sorteio * 100).toFixed(1)}%) — ${agora}`);
-    process.exit(0);
+    return;
   } else {
     contadorExecucoes = 0;
     await setContadorExecucoes(0);
     console.log(`✅ Execução permitida (${(chanceFinal * 100).toFixed(1)}% de chance, sorteio ${(sorteio * 100).toFixed(1)}%) — ${agora}`);
   }
 
-  await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).");
+  await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).\nPágina inicial: 1");
 
   const baseUrl = "https://pncp.gov.br/api/search/";
   let totalColetado = 0;
@@ -131,4 +137,6 @@ const { sleep, notificarTelegram } = require("./utils");
     console.error("Erro geral:", err);
     await notificarTelegram(`❌ Erro geral: ${err.message}`);
   }
-})();
+}
+
+module.exports = { executarColeta };

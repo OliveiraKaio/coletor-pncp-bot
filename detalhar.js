@@ -1,4 +1,3 @@
-// detalhar.js
 const axios = require("axios");
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

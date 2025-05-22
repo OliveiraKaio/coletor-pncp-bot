@@ -1,4 +1,3 @@
-// index.js
 const express = require("express");
 const app = express();
 const { executarColeta } = require("./start");

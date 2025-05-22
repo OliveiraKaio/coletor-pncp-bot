@@ -1,4 +1,3 @@
-// db.js
 const { Pool } = require("pg");
 const { DATABASE_URL } = require("./config");
 
