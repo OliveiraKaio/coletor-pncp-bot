@@ -1,22 +1,21 @@
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-const { TELEGRAM_TOKEN, TELEGRAM_CHAT_ID } = require('./config');
+const axios = require("axios");
+const dotenv = require("dotenv");
+dotenv.config();
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+async function notificarTelegram(mensagem) {
+  const token = process.env.TELEGRAM_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
-async function notificarTelegram(msg) {
-  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
-  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
   try {
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg })
+    await axios.post(url, {
+      chat_id: chatId,
+      text: mensagem,
+      parse_mode: "HTML"
     });
-  } catch (e) {
-    console.warn('[telegram] falha ao enviar:', e.message);
+  } catch (err) {
+    console.error("Erro ao enviar para Telegram:", err.message);
   }
 }
 
-module.exports = { sleep, notificarTelegram };
+module.exports = { notificarTelegram };
