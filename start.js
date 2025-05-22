@@ -1,5 +1,8 @@
-// start.js - coleta via Puppeteer com log de blocos ignorados
+// start.js - versão compatível com Railway replicando o modelo funcional do .zip
 const puppeteer = require("puppeteer");
+const dotenv = require("dotenv");
+dotenv.config();
+
 const {
   PAGINAS_SORTEADAS,
   LIMITE_EDITAIS_POR_EXECUCAO,
@@ -12,7 +15,7 @@ const { sleep, notificarTelegram } = require("./utils");
 
 (async () => {
   await notificarTelegram("🤖 Bot PNCP iniciado.");
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
   const page = await browser.newPage();
 
   let totalColetado = 0;
