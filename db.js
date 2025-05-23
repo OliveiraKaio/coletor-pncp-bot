@@ -15,7 +15,8 @@ async function inicializarBanco() {
       cnpj TEXT, tipo TEXT, modo_disputa TEXT, registro_preco TEXT,
       fonte_orcamentaria TEXT, data_divulgacao TEXT, situacao TEXT,
       data_inicio TEXT, data_fim TEXT, valor_total TEXT,
-      itens_detalhados TEXT, coletado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      itens_detalhados TEXT, fonte_sistema TEXT,
+      coletado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS execucoes_bot (
@@ -31,7 +32,8 @@ async function salvarEdital(edital) {
     idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
     objeto, link, cnpj, tipo, modo_disputa, registro_preco,
     fonte_orcamentaria, data_divulgacao, situacao,
-    data_inicio, data_fim, valor_total, itens_detalhados
+    data_inicio, data_fim, valor_total, itens_detalhados,
+    fonte_sistema
   } = edital;
 
   await pool.query(`
@@ -39,14 +41,14 @@ async function salvarEdital(edital) {
       idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
       objeto, link, cnpj, tipo, modo_disputa, registro_preco,
       fonte_orcamentaria, data_divulgacao, situacao,
-      data_inicio, data_fim, valor_total, itens_detalhados
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+      data_inicio, data_fim, valor_total, itens_detalhados, fonte_sistema
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
     ON CONFLICT (idpncp) DO NOTHING
   `, [
     idpncp, titulo, modalidade, ultima_atualizacao, orgao, local,
     objeto, link, cnpj, tipo, modo_disputa, registro_preco,
     fonte_orcamentaria, data_divulgacao, situacao,
-    data_inicio, data_fim, valor_total, itens_detalhados
+    data_inicio, data_fim, valor_total, itens_detalhados, fonte_sistema
   ]);
 }
 

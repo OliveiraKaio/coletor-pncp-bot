@@ -1,3 +1,4 @@
+// start.js - scraping HTTP via API PNCP (sem Puppeteer)
 const axios = require("axios");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -40,7 +41,7 @@ async function executarColeta() {
     console.log(`✅ Execução permitida (${(chanceFinal * 100).toFixed(1)}% de chance, sorteio ${(sorteio * 100).toFixed(1)}%) — ${agora}`);
   }
 
-  await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron).\nPágina inicial: 1");
+  await notificarTelegram("🤖 Bot PNCP iniciou nova varredura (cron). Página inicial: 1");
 
   const baseUrl = "https://pncp.gov.br/api/search/";
   let totalColetado = 0;
