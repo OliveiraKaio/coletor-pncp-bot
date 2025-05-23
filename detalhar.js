@@ -22,9 +22,9 @@ async function detalharEdital(idpncp) {
       registro_preco: data.srp ? "Sim" : "Não",
       fonte_orcamentaria: data.fontesOrcamentarias?.map(f => f.nome).join(", ") || "",
       data_divulgacao: data.dataPublicacaoPncp || "",
+      situacao: data.situacaoCompraNome || "",
       data_inicio: data.dataAberturaProposta || "",
       data_fim: data.dataEncerramentoProposta || "",
-      situacao: data.situacaoCompraNome || "",
       valor_total: data.valorTotalEstimado || "",
       objetoDetalhado: data.objetoCompra || "",
       fonte_sistema: data.usuarioNome || ""

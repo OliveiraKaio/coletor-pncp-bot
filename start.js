@@ -15,6 +15,7 @@ const {
   consultarIdsExistentes,
   getContadorExecucoes,
   setContadorExecucoes,
+  registrarErroEdital
 } = require("./db");
 const { detalharEdital, coletarItensEdital } = require("./detalhar");
 const { sleep, notificarTelegram } = require("./utils");
@@ -100,6 +101,7 @@ async function executarColeta() {
 
         if (!detalhes || !itensDetalhados) {
           console.log(`⚠️ Falha ao detalhar ${idpncp}`);
+          await registrarErroEdital(idpncp, "Erro ao detalhar ou itens ausentes");
           await notificarTelegram(`❌ Falha ao detalhar edital ${idpncp} — possível erro de conexão ou bloqueio.`);
           await sleep(DELAY_EM_CASO_DE_ERRO_MS);
           continue;

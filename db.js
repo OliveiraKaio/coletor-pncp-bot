@@ -24,6 +24,13 @@ async function inicializarBanco() {
       data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       contador INT DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS editais_erros (
+      idpncp TEXT PRIMARY KEY,
+      motivo TEXT,
+      tentativas INT DEFAULT 1,
+      ultima_tentativa TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 }
 
@@ -50,6 +57,24 @@ async function salvarEdital(edital) {
     fonte_orcamentaria, data_divulgacao, situacao,
     data_inicio, data_fim, valor_total, itens_detalhados, fonte_sistema
   ]);
+}
+
+async function registrarErroEdital(idpncp, motivo) {
+  const res = await pool.query(
+    `SELECT tentativas FROM editais_erros WHERE idpncp = $1`,
+    [idpncp]
+  );
+  if (res.rowCount > 0) {
+    await pool.query(
+      `UPDATE editais_erros SET tentativas = tentativas + 1, ultima_tentativa = CURRENT_TIMESTAMP WHERE idpncp = $1`,
+      [idpncp]
+    );
+  } else {
+    await pool.query(
+      `INSERT INTO editais_erros (idpncp, motivo) VALUES ($1, $2)`,
+      [idpncp, motivo]
+    );
+  }
 }
 
 async function editalExiste(idpncp) {
@@ -80,5 +105,6 @@ module.exports = {
   inicializarBanco,
   consultarIdsExistentes,
   getContadorExecucoes,
-  setContadorExecucoes
+  setContadorExecucoes,
+  registrarErroEdital
 };
