@@ -1,5 +1,5 @@
 module.exports = {
-  LIMITE_EDITAIS_POR_EXECUCAO: Math.floor(Math.random() * 61) + 40, // entre 40 e 100 editais
+  LIMITE_EDITAIS_POR_EXECUCAO: 400,
   
   DELAY_ENTRE_EDITAIS_MS: () => Math.floor(Math.random() * 3000) + 2000, // entre 2s e 5s
   DELAY_EM_CASO_DE_ERRO_MS: 300000, // 5 minutos
